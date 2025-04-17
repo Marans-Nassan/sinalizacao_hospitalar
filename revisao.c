@@ -25,9 +25,9 @@
 #define VRY 27
 
 typedef struct{
-    bool press1;
-    bool press2;
-    bool press3;
+    volatile bool press1;
+    volatile bool press2;
+    volatile bool press3;
 } Botestado;
 Botestado B = {false, false, false};
 
@@ -41,9 +41,10 @@ int main(){
     stdio_init_all();
     ledinit();
     botinit();
+    led_lig_des();
 
     while (true) {
-        printf("Hello, world!\n");
+        printf("\nHello, world!\n");
         sleep_ms(1000);
     }
 }
@@ -74,21 +75,28 @@ void led_lig_des(){
  }
 
 void gpio_irq_handler(uint gpio, uint32_t events){
-    if(gpio == botao_a){
-        B.press1 = !B.press1;
-        gpio_put(green_led, B.press1);
-        (B.press1 == true) ? printf("\nBotão A pressionado e luz verde ligada"): printf("\nBotao A pressionado e luz verde desligada.");
-    }
 
-    if(gpio == botao_b){
-        B.press2 = !B.press2;
-        gpio_put(blue_led, B.press2);
-        (B.press2 == true) ? printf("\nBotão B pressionado e luz azul ligada"): printf("\nBotão B pressionado e luz azul desligada.");
-    }
+    uint64_t current_time = to_us_since_boot(get_absolute_time()) /1000;
+    static uint64_t lastA = 0, lastB = 0, lastJ = 0;
 
-    if(gpio == botao_j){
-        B.press3 = !B.press3;
-        gpio_put(red_led, B.press3);
-        (B.press3 == true) ? printf("\nBotão J pressionado e luz vermelha ligada."): printf("\nBotão J pressionado e luz vermelha desligada");
-    }
+        if(gpio == botao_a && (current_time - lastA > 300)){
+            B.press1 = !B.press1;
+            gpio_put(green_led, B.press1);
+            (B.press1 == true) ? printf("\nBotão A pressionado e luz verde ligada"): printf("\nBotao A pressionado e luz verde desligada.");
+            lastA = current_time;
+        }
+
+        if(gpio == botao_b && (current_time - lastB > 300)){
+            B.press2 = !B.press2;
+            gpio_put(blue_led, B.press2);
+            (B.press2 == true) ? printf("\nBotão B pressionado e luz azul ligada"): printf("\nBotão B pressionado e luz azul desligada.");
+            lastB = current_time;
+        }
+
+        if(gpio == botao_j && (current_time - lastJ > 300)){
+            B.press3 = !B.press3;
+            gpio_put(red_led, B.press3);
+            (B.press3 == true) ? printf("\nBotão J pressionado e luz vermelha ligada."): printf("\nBotão J pressionado e luz vermelha desligada");
+            lastJ = current_time;
+        }  
 }

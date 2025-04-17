@@ -32,17 +32,16 @@ typedef struct{
 Botestado B = {false, false, false};
 
 void ledinit();
-void botinit(uint8_t x);
-void led_lig_des(uint8_t bot);
+void botinit();
+void led_lig_des();
 void gpio_irq_handler(uint gpio, uint32_t events);
 
 int main(){
 
     stdio_init_all();
     ledinit();
-    botinit(5);
-    botinit(6);
-    botinit(22);
+    botinit();
+
     while (true) {
         printf("Hello, world!\n");
         sleep_ms(1000);
@@ -56,18 +55,40 @@ void ledinit(){
         gpio_put(i, 0);
     }
 }
-void botinit(uint8_t x){
-    gpio_init(x);
-    gpio_set_dir(x, GPIO_IN);
-    gpio_pull_up(x);
-
+void botinit(){
+    const int botoes[3] = {botao_a, botao_b, botao_j};
+        for(uint8_t i = 0; i < 3; i++){
+            gpio_init(botoes[i]);
+            gpio_set_dir(botoes[i], GPIO_IN);
+            gpio_pull_up(botoes[i]);
+        }      
+   
 }
+
+void led_lig_des(){
+    const uint8_t bots[3] = {botao_a, botao_b, botao_j};
+     for(uint8_t i = 0; i < 3; i++){
+         gpio_set_irq_enabled_with_callback (bots[i], GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
+     }
+ 
+ }
 
 void gpio_irq_handler(uint gpio, uint32_t events){
-    
-}
+    if(gpio == botao_a){
+        B.press1 = !B.press1;
+        gpio_put(green_led, B.press1);
+        (B.press1 == true) ? printf("\nBotão A pressionado e luz verde ligada"): printf("\nBotao A pressionado e luz verde desligada.");
+    }
 
-void led_lig_des(uint8_t bot){
-gpio_set_irq_enabled_with_callback (bot, GPIO_IRQ_EDGE_FALL, true, &gpio_irq_handler);
-}
+    if(gpio == botao_b){
+        B.press2 = !B.press2;
+        gpio_put(blue_led, B.press2);
+        (B.press2 == true) ? printf("\nBotão B pressionado e luz azul ligada"): printf("\nBotão B pressionado e luz azul desligada.");
+    }
 
+    if(gpio == botao_j){
+        B.press3 = !B.press3;
+        gpio_put(red_led, B.press3);
+        (B.press3 == true) ? printf("\nBotão J pressionado e luz vermelha ligada."): printf("\nBotão J pressionado e luz vermelha desligada");
+    }
+}

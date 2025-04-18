@@ -31,8 +31,9 @@ typedef struct{
     volatile bool press1;
     volatile bool press2;
     volatile bool press3;
+    volatile bool impedir;
 } Botestado;
-Botestado B = {false, false, false};
+Botestado B = {false, false, false, false};
 
 typedef struct{
     float dc;
@@ -41,11 +42,18 @@ typedef struct{
 } pwm_struct;
 pwm_struct p = {55.8, 64.0, true};
 
+typedef struct pixeis {
+    uint8_t G, R, B;
+  } pixeis;
+pixeis leds[matriz_led_pins];
+  
 struct repeating_timer timer;
 uint8_t slice;
 uint16_t vrx_value = 0;
 uint16_t vry_value = 0;
 ssd1306_t ssd;
+PIO pio; 
+uint sm;
 
 void ledinit();
 void botinit();
@@ -61,6 +69,13 @@ uint16_t media(uint8_t channel);
 void i2cinit();
 void oledinit();
 void oleddis();
+void minit(uint pin);
+void setled(const uint index, const uint8_t r, const uint8_t g, const uint8_t b);
+void mdisplay();
+void led_clear_a();
+void led_clear_b();
+void press_a();
+void press_b();
 
 int main(){
 
@@ -73,12 +88,28 @@ int main(){
     slice = pwm_setup();
     i2cinit();
     oledinit();
+    minit(matriz_led);
 
     while (true) {
         vry_value = 4095 - media(adc_channel_0); //Potênciometro está invertido.
         vrx_value = media(adc_channel_1);
         oleddis();
-        
+        (B.press1) ? press_a():led_clear_a();
+        (B.press2) ? press_b():led_clear_b();
+        if(B.impedir){
+            B.impedir = false;
+            if(B.press3 == true){
+                buzzcontrol_on();
+                add_repeating_timer_ms(50, repeating_timer_callback, NULL, &timer);
+                printf("\nBotão J pressionado, luz vermelha ligada e som do PWM ligado ."); 
+
+            }
+            else {
+                cancel_repeating_timer(&timer);
+                buzzcontrol_off();
+                printf("\nBotão J pressionado, luz vermelha desligada e som do PWM desligado.");
+            }  
+        }  
     }
 }
 
@@ -114,29 +145,21 @@ void gpio_irq_handler(uint gpio, uint32_t events){
         if(gpio == botao_a && (current_time - lastA > 300)){
             B.press1 = !B.press1;
             gpio_put(green_led, B.press1);
-            (B.press1 == true) ? printf("\nBotão A pressionado e luz verde ligada"): printf("\nBotao A pressionado e luz verde desligada.");
+            (B.press1) ? printf("\nBotão A pressionado. Luz verde ligada e matriz ativada"): printf("\nBotao A pressionado. Luz verde desligada e matriz desativada.");
             lastA = current_time;
         }
 
         if(gpio == botao_b && (current_time - lastB > 300)){
             B.press2 = !B.press2;
             gpio_put(blue_led, B.press2);
-            (B.press2 == true) ? printf("\nBotão B pressionado e luz azul ligada"): printf("\nBotão B pressionado e luz azul desligada.");
+            (B.press2) ? printf("\nBotão B pressionado. Luz azul ligada e matriz ativada.") : printf("\nBotão B pressionado. Luz azul desligada e matriz desativada.");
             lastB = current_time;
         }
 
         if(gpio == botao_j && (current_time - lastJ > 300)){
             B.press3 = !B.press3;
+            B.impedir = true;
             gpio_put(red_led, B.press3);
-            (B.press3 == true) ? printf("\nBotão J pressionado, luz vermelha ligada e som do PWM ligado ."): printf("\nBotão J pressionado, luz vermelha desligada e som do PWM desligado.");
-            if(B.press3 == true){
-                buzzcontrol_on();
-                add_repeating_timer_ms(50, repeating_timer_callback, NULL, &timer);
-            }
-            else {
-                cancel_repeating_timer(&timer);
-                buzzcontrol_off();
-            }
             lastJ = current_time;
         }  
 }
@@ -177,7 +200,7 @@ void som(){
 }
 
 bool repeating_timer_callback(struct repeating_timer *t){
-    som(slice);
+    som();
     return true;
 }
 
@@ -218,4 +241,69 @@ void oleddis(){
     ssd1306_fill(&ssd, false);
     ssd1306_rect(&ssd, linha_y, coluna_x, 8, 8, true, true);
     ssd1306_send_data(&ssd);
+}
+
+void minit(uint pin){
+uint offset = pio_add_program(pio0, &ws2812_program);
+pio = pio0;
+
+sm = pio_claim_unused_sm(pio, false);
+    if(sm < 0){
+        pio = pio1;
+        sm = pio_claim_unused_sm(pio, true);
+    }
+
+ws2812_program_init(pio, sm, offset, pin, 800000.f);
+}
+
+void setled(const uint index, const uint8_t r, const uint8_t g, const uint8_t b){
+    leds[index].R = r;
+    leds[index].G = g;
+    leds[index].B = b;
+}
+
+void mdisplay(){
+    for (uint i = 0; i < matriz_led_pins; ++i) {
+        pio_sm_put_blocking(pio, sm, leds[i].G);
+        pio_sm_put_blocking(pio, sm, leds[i].R);
+        pio_sm_put_blocking(pio, sm, leds[i].B);
+    }
+sleep_us(100); 
+}
+
+void led_clear_a(){
+    const uint8_t digit_leds[] = {24, 23, 22, 21, 20, 15, 19, 14, 10, 5, 9, 4, 3, 2, 1, 0};
+    size_t a = sizeof(digit_leds) / sizeof(digit_leds[0]);
+    for (size_t i = 0; i < a; ++i) {
+        setled(digit_leds[i], 0, 0, 0);
+    }
+        mdisplay();   
+}
+
+void led_clear_b(){
+    const uint8_t digit_leds[] = {22, 17, 14, 13, 12, 11, 10, 7, 2};
+    size_t a = sizeof(digit_leds) / sizeof(digit_leds[0]);
+    for (size_t i = 0; i < a; ++i) {
+        setled(digit_leds[i], 0, 0, 0);
+    }
+        mdisplay();   
+}
+
+
+void press_a(){
+    const uint8_t digit_leds[] = {24, 23, 22, 21, 20, 15, 19, 14, 10, 5, 9, 4, 3, 2, 1, 0};
+    size_t a = sizeof(digit_leds) / sizeof(digit_leds[0]);
+    for (size_t i = 0; i < a; ++i) {
+        setled(digit_leds[i], 0, 0, 1);
+    }
+        mdisplay();   
+}
+
+void press_b(){
+    const uint8_t digit_leds[] = {22, 17, 14, 13, 12, 11, 10, 7, 2};
+    size_t a = sizeof(digit_leds) / sizeof(digit_leds[0]);
+    for (size_t i = 0; i < a; ++i) {
+        setled(digit_leds[i], 0, 1, 0);
+    }
+        mdisplay();   
 }

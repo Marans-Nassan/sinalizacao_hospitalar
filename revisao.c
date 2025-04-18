@@ -3,6 +3,7 @@
 #include "hardware/i2c.h"
 #include "hardware/pio.h"
 #include "hardware/adc.h"
+#include "hardware/pwm.h"
 #include "font.h"
 #include "ssd1306.h"
 #include "ws2812.pio.h"
@@ -19,6 +20,7 @@
 #define endereco 0x3c
 #define adc_channel_0  0
 #define adc_channel_1  1
+#define buzz_a 21
 #define botao_j 22
 #define matriz_led_pins 25
 #define VRX 26
@@ -30,11 +32,14 @@ typedef struct{
     volatile bool press3;
 } Botestado;
 Botestado B = {false, false, false};
+uint8_t slice;
 
 void ledinit();
 void botinit();
 void led_lig_des();
 void gpio_irq_handler(uint gpio, uint32_t events);
+int pwm_setup();
+void som(uint8_t slice);
 
 int main(){
 
@@ -42,10 +47,11 @@ int main(){
     ledinit();
     botinit();
     led_lig_des();
+    pwm_setup();
+    slice = pwm_setup();
 
     while (true) {
-        printf("\nHello, world!\n");
-        sleep_ms(1000);
+        som(slice);
     }
 }
 
@@ -75,7 +81,6 @@ void led_lig_des(){
  }
 
 void gpio_irq_handler(uint gpio, uint32_t events){
-
     uint64_t current_time = to_us_since_boot(get_absolute_time()) /1000;
     static uint64_t lastA = 0, lastB = 0, lastJ = 0;
 
@@ -96,7 +101,33 @@ void gpio_irq_handler(uint gpio, uint32_t events){
         if(gpio == botao_j && (current_time - lastJ > 300)){
             B.press3 = !B.press3;
             gpio_put(red_led, B.press3);
-            (B.press3 == true) ? printf("\nBotão J pressionado e luz vermelha ligada."): printf("\nBotão J pressionado e luz vermelha desligada");
+            (B.press3 == true) ? printf("\nBotão J pressionado, luz vermelha ligada e som do PWM desligado ."): printf("\nBotão J pressionado, luz vermelha desligada e som do PWM ligado.");
+            (B.press3 == true) ? pwm_set_enabled(slice, false): pwm_set_enabled(slice, true);
             lastJ = current_time;
         }  
 }
+
+int pwm_setup(){
+    gpio_set_function(buzz_a, GPIO_FUNC_PWM);
+    uint8_t slice = pwm_gpio_to_slice_num(buzz_a);
+    pwm_set_clkdiv(slice, 56.0);
+    pwm_set_wrap(slice, 5580);
+    pwm_set_enabled(slice, true);
+    return slice;
+}
+
+void som(uint8_t slice){
+    static float dc = 55.8; // 1% DC
+    static float cd = 64.0;
+        for (dc, cd; dc <= 5580; dc+= 92.07, cd-=0.53 ){
+            pwm_set_clkdiv(slice, cd);
+            pwm_set_gpio_level(buzz_a, dc);
+            sleep_ms(50);
+        }
+
+        for (dc, cd; dc >= 55.8; dc-= 92.07, cd+=0.53){
+            pwm_set_clkdiv(slice, cd);
+            pwm_set_gpio_level(buzz_a, dc);
+            sleep_ms(50);
+        }
+}    

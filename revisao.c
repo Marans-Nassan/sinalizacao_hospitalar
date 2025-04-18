@@ -33,6 +33,9 @@ typedef struct{
 } Botestado;
 Botestado B = {false, false, false};
 uint8_t slice;
+uint16_t vrx_value = 0;
+uint16_t vry_value = 0;
+ssd1306_t ssd;
 
 void ledinit();
 void botinit();
@@ -40,6 +43,11 @@ void led_lig_des();
 void gpio_irq_handler(uint gpio, uint32_t events);
 int pwm_setup();
 void som(uint8_t slice);
+void adcinit();
+uint16_t media(uint8_t channel);
+void i2cinit();
+void oledinit();
+void oleddis();
 
 int main(){
 
@@ -47,11 +55,17 @@ int main(){
     ledinit();
     botinit();
     led_lig_des();
+    adcinit();
     pwm_setup();
     slice = pwm_setup();
+    i2cinit();
+    oledinit();
 
     while (true) {
-        som(slice);
+        vry_value = 4095 - media(adc_channel_0); //Potênciometro está invertido.
+        vrx_value = media(adc_channel_1);
+        oleddis();
+        
     }
 }
 
@@ -122,12 +136,49 @@ void som(uint8_t slice){
         for (dc, cd; dc <= 5580; dc+= 92.07, cd-=0.53 ){
             pwm_set_clkdiv(slice, cd);
             pwm_set_gpio_level(buzz_a, dc);
-            sleep_ms(50);
         }
 
         for (dc, cd; dc >= 55.8; dc-= 92.07, cd+=0.53){
             pwm_set_clkdiv(slice, cd);
             pwm_set_gpio_level(buzz_a, dc);
-            sleep_ms(50);
         }
-}    
+}
+
+void i2cinit(){
+    i2c_init(I2C_PORT, 400*1000);
+        for(uint8_t i = 14 ; i < 16; i++){
+            gpio_set_function(i, GPIO_FUNC_I2C);
+            gpio_pull_up(i);
+        }
+}
+
+void adcinit(){
+    adc_init();
+    adc_gpio_init(VRY);
+    adc_gpio_init(VRX);
+}
+
+void oledinit(){
+    ssd1306_init(&ssd, WIDTH, HEIGHT, false, endereco, I2C_PORT);
+    ssd1306_config(&ssd);
+}
+uint16_t media(uint8_t channel){
+    uint16_t media_adc = 0;
+    for(uint8_t i = 0; i < 10; i++){
+        adc_select_input(channel);
+        sleep_us(2);
+        media_adc += adc_read();
+    }
+return media_adc / 10;
+}
+
+void oleddis(){
+
+    uint16_t coluna_x = (vrx_value * WIDTH) / 4095;
+    uint16_t linha_y = (vry_value * HEIGHT) / 4095;
+    if(coluna_x > WIDTH - 8) coluna_x = WIDTH - 8;
+    if(linha_y > HEIGHT - 8) linha_y = HEIGHT - 8;
+    ssd1306_fill(&ssd, false);
+    ssd1306_rect(&ssd, linha_y, coluna_x, 8, 8, true, true);
+    ssd1306_send_data(&ssd);
+}

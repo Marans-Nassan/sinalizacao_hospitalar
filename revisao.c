@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "pico/time.h"
 #include "hardware/i2c.h"
 #include "hardware/pio.h"
 #include "hardware/adc.h"
@@ -32,6 +33,15 @@ typedef struct{
     volatile bool press3;
 } Botestado;
 Botestado B = {false, false, false};
+
+typedef struct{
+    float dc;
+    float cd;
+    bool direcao;
+} pwm_struct;
+pwm_struct p = {55.8, 64.0, true};
+
+struct repeating_timer timer;
 uint8_t slice;
 uint16_t vrx_value = 0;
 uint16_t vry_value = 0;
@@ -42,7 +52,10 @@ void botinit();
 void led_lig_des();
 void gpio_irq_handler(uint gpio, uint32_t events);
 int pwm_setup();
-void som(uint8_t slice);
+void buzzcontrol_on();
+void buzzcontrol_off();
+void som();
+bool repeating_timer_callback(struct repeating_timer *t);
 void adcinit();
 uint16_t media(uint8_t channel);
 void i2cinit();
@@ -115,8 +128,15 @@ void gpio_irq_handler(uint gpio, uint32_t events){
         if(gpio == botao_j && (current_time - lastJ > 300)){
             B.press3 = !B.press3;
             gpio_put(red_led, B.press3);
-            (B.press3 == true) ? printf("\nBotão J pressionado, luz vermelha ligada e som do PWM desligado ."): printf("\nBotão J pressionado, luz vermelha desligada e som do PWM ligado.");
-            (B.press3 == true) ? pwm_set_enabled(slice, false): pwm_set_enabled(slice, true);
+            (B.press3 == true) ? printf("\nBotão J pressionado, luz vermelha ligada e som do PWM ligado ."): printf("\nBotão J pressionado, luz vermelha desligada e som do PWM desligado.");
+            if(B.press3 == true){
+                buzzcontrol_on();
+                add_repeating_timer_ms(50, repeating_timer_callback, NULL, &timer);
+            }
+            else {
+                cancel_repeating_timer(&timer);
+                buzzcontrol_off();
+            }
             lastJ = current_time;
         }  
 }
@@ -129,19 +149,36 @@ int pwm_setup(){
     pwm_set_enabled(slice, true);
     return slice;
 }
+void buzzcontrol_on(){
+    gpio_set_function(buzz_a, GPIO_FUNC_PWM);
+    pwm_set_enabled(slice, true);
+}
 
-void som(uint8_t slice){
-    static float dc = 55.8; // 1% DC
-    static float cd = 64.0;
-        for (dc, cd; dc <= 5580; dc+= 92.07, cd-=0.53 ){
-            pwm_set_clkdiv(slice, cd);
-            pwm_set_gpio_level(buzz_a, dc);
-        }
+void buzzcontrol_off(){
+    pwm_set_enabled(slice, false);
+    gpio_set_function(buzz_a, GPIO_FUNC_SIO);
+    gpio_set_dir(buzz_a, GPIO_OUT);
+    gpio_put(buzz_a, 0);
+}
 
-        for (dc, cd; dc >= 55.8; dc-= 92.07, cd+=0.53){
-            pwm_set_clkdiv(slice, cd);
-            pwm_set_gpio_level(buzz_a, dc);
+void som(){
+    pwm_set_clkdiv(slice, p.cd);
+    pwm_set_gpio_level(buzz_a, p.dc);
+        if(p.direcao == true){
+            p.dc += 92.07;
+            p.cd -= 0.53;
+                if(p.dc >= 5580) p.direcao = false;
         }
+        else {
+            p.dc -= 92.07;
+            p.cd += 0.53;
+                if(p.dc <= 55.8) p.direcao = true;
+        }             
+}
+
+bool repeating_timer_callback(struct repeating_timer *t){
+    som(slice);
+    return true;
 }
 
 void i2cinit(){

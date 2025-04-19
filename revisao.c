@@ -27,7 +27,7 @@
 #define VRX 26
 #define VRY 27
 
-typedef struct{
+typedef struct{ // estrutura responsável por gerir os botões e a ativação e desativação do pwm.
     volatile bool press1;
     volatile bool press2;
     volatile bool press3;
@@ -35,18 +35,18 @@ typedef struct{
 } Botestado;
 Botestado B = {false, false, false, false};
 
-typedef struct{
+typedef struct{ // estrutura responsável por regular os valores utilizados no pwm.
     float dc;
     float cd;
     bool direcao;
 } pwm_struct;
 pwm_struct p = {55.8, 64.0, true};
 
-typedef struct pixeis {
+typedef struct pixeis { // estrutura empregada ao configurar a matriz de leds.
     uint8_t G, R, B;
   } pixeis;
 pixeis leds[matriz_led_pins];
-  
+  // Variáveis utilizadas
 struct repeating_timer timer;
 uint8_t slice;
 uint16_t vrx_value = 0;
@@ -55,27 +55,27 @@ ssd1306_t ssd;
 PIO pio; 
 uint sm;
 
-void ledinit();
-void botinit();
-void led_lig_des();
-void gpio_irq_handler(uint gpio, uint32_t events);
-int pwm_setup();
-void buzzcontrol_on();
-void buzzcontrol_off();
-void som();
-bool repeating_timer_callback(struct repeating_timer *t);
-void adcinit();
-uint16_t media(uint8_t channel);
-void i2cinit();
-void oledinit();
-void oleddis();
-void minit(uint pin);
-void setled(const uint index, const uint8_t r, const uint8_t g, const uint8_t b);
-void mdisplay();
-void led_clear_a();
-void led_clear_b();
-void press_a();
-void press_b();
+void ledinit(); //inicialização do led
+void botinit(); //inicialização dos botões
+void led_lig_des(); // Responsável por ligar e desligar os leds comuns
+void gpio_irq_handler(uint gpio, uint32_t events); // Conteúdo das interrupções.
+int pwm_setup(); // Configuraçãod o PWM.
+void buzzcontrol_on(); // Controle de ativação do PWM.
+void buzzcontrol_off(); // Controle de desativação do PWM.
+void som(); // Configuração do som que sai do PWM.
+bool repeating_timer_callback(struct repeating_timer *t); // Timer utilizado na configuração de ativação do PWM.
+void adcinit(); // Inicialização do conversor.
+uint16_t media(uint8_t channel); // Responsável pela obtenção da média da leitura do ADC a fim de ter uma maior precisão.
+void i2cinit(); // Inicialização do i2c.
+void oledinit(); // Configuração do display.
+void oleddis(); // Definição do que irá aparecer no display.
+void minit(uint pin); // Configuração da Matriz de led.
+void setled(const uint index, const uint8_t r, const uint8_t g, const uint8_t b); // Definindo como a matriz de led irá selecionar os leds.
+void mdisplay(); // Responsável por ativar os devidos leds de acordo com as informações recebidas.
+void led_clear_a(); // Limpar o símbolo utilizado pela matriz ativada no botão a.
+void led_clear_b(); // Limpar o símbolo utilizado pela matriz ativada no botão b.
+void press_a(); // Apresentar o símbolo utilizado pela matriz ativada no botão a.
+void press_b(); // Apresentar o símbolo utilizado pela matriz ativada no botão b.
 
 int main(){
 
@@ -101,7 +101,7 @@ int main(){
             if(B.press3 == true){
                 buzzcontrol_on();
                 add_repeating_timer_ms(50, repeating_timer_callback, NULL, &timer);
-                printf("\nBotão J pressionado, luz vermelha ligada e som do PWM ligado ."); 
+                printf("\nBotão J pressionado, luz vermelha ligada e som do PWM ligado .");
 
             }
             else {
@@ -281,7 +281,7 @@ void led_clear_a(){
 }
 
 void led_clear_b(){
-    const uint8_t digit_leds[] = {22, 17, 14, 13, 12, 11, 10, 7, 2};
+    const uint8_t digit_leds[] = {17, 13, 12, 11, 7};
     size_t a = sizeof(digit_leds) / sizeof(digit_leds[0]);
     for (size_t i = 0; i < a; ++i) {
         setled(digit_leds[i], 0, 0, 0);
@@ -300,7 +300,7 @@ void press_a(){
 }
 
 void press_b(){
-    const uint8_t digit_leds[] = {22, 17, 14, 13, 12, 11, 10, 7, 2};
+    const uint8_t digit_leds[] = {17, 13, 12, 11, 7};
     size_t a = sizeof(digit_leds) / sizeof(digit_leds[0]);
     for (size_t i = 0; i < a; ++i) {
         setled(digit_leds[i], 0, 1, 0);

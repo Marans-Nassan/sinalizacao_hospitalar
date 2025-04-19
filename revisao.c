@@ -5,7 +5,6 @@
 #include "hardware/pio.h"
 #include "hardware/adc.h"
 #include "hardware/pwm.h"
-#include "font.h"
 #include "ssd1306.h"
 #include "ws2812.pio.h"
 
@@ -47,13 +46,15 @@ typedef struct pixeis { // estrutura empregada ao configurar a matriz de leds.
   } pixeis;
 pixeis leds[matriz_led_pins];
   // Variáveis utilizadas
-struct repeating_timer timer;
+struct repeating_timer timer_pwm;
+struct repeating_timer timer_adc;
 uint8_t slice;
 uint16_t vrx_value = 0;
 uint16_t vry_value = 0;
 ssd1306_t ssd;
 PIO pio; 
 uint sm;
+uint16_t media_adc;
 
 void ledinit(); //inicialização do led
 void botinit(); //inicialização dos botões
@@ -63,7 +64,7 @@ int pwm_setup(); // Configuraçãod o PWM.
 void buzzcontrol_on(); // Controle de ativação do PWM.
 void buzzcontrol_off(); // Controle de desativação do PWM.
 void som(); // Configuração do som que sai do PWM.
-bool repeating_timer_callback(struct repeating_timer *t); // Timer utilizado na configuração de ativação do PWM.
+bool repeating_timer_callback1(struct repeating_timer *t); // Timer utilizado na configuração de ativação do PWM.
 void adcinit(); // Inicialização do conversor.
 uint16_t media(uint8_t channel); // Responsável pela obtenção da média da leitura do ADC a fim de ter uma maior precisão.
 void i2cinit(); // Inicialização do i2c.
@@ -76,6 +77,7 @@ void led_clear_a(); // Limpar o símbolo utilizado pela matriz ativada no botão
 void led_clear_b(); // Limpar o símbolo utilizado pela matriz ativada no botão b.
 void press_a(); // Apresentar o símbolo utilizado pela matriz ativada no botão a.
 void press_b(); // Apresentar o símbolo utilizado pela matriz ativada no botão b.
+bool repeating_timer_callback2(struct repeating_timer *t); // Responsável por possibilitar a leitura do conversor digital dos eixos.
 
 int main(){
 
@@ -89,6 +91,7 @@ int main(){
     i2cinit();
     oledinit();
     minit(matriz_led);
+    add_repeating_timer_ms (250, repeating_timer_callback2, NULL, &timer_adc);    
 
     while (true) {
         vry_value = 4095 - media(adc_channel_0); //Potênciometro está invertido.
@@ -100,12 +103,12 @@ int main(){
             B.impedir = false;
             if(B.press3 == true){
                 buzzcontrol_on();
-                add_repeating_timer_ms(50, repeating_timer_callback, NULL, &timer);
+                add_repeating_timer_ms(50, repeating_timer_callback1, NULL, &timer_pwm);
                 printf("\nBotão J pressionado, luz vermelha ligada e som do PWM ligado .");
 
             }
             else {
-                cancel_repeating_timer(&timer);
+                cancel_repeating_timer(&timer_pwm);
                 buzzcontrol_off();
                 printf("\nBotão J pressionado, luz vermelha desligada e som do PWM desligado.");
             }  
@@ -199,7 +202,7 @@ void som(){
         }             
 }
 
-bool repeating_timer_callback(struct repeating_timer *t){
+bool repeating_timer_callback1(struct repeating_timer *t){
     som();
     return true;
 }
@@ -223,7 +226,7 @@ void oledinit(){
     ssd1306_config(&ssd);
 }
 uint16_t media(uint8_t channel){
-    uint16_t media_adc = 0;
+    media_adc = 0;
     for(uint8_t i = 0; i < 10; i++){
         adc_select_input(channel);
         sleep_us(2);
@@ -306,4 +309,11 @@ void press_b(){
         setled(digit_leds[i], 0, 1, 0);
     }
         mdisplay();   
+}
+
+bool repeating_timer_callback2(struct repeating_timer *t){
+    uint16_t reading1 = media(adc_channel_0);
+    uint16_t reading2 = media(adc_channel_1);
+    printf("\nLeitura dos eixos Y e X: %d | %d", reading1, reading2);
+    return true;
 }

@@ -101,16 +101,13 @@ int main(){
         (B.press2) ? press_b():led_clear_b();
         if(B.impedir){
             B.impedir = false;
-            if(B.press3 == true){
+            if(B.press3){
                 buzzcontrol_on();
                 add_repeating_timer_ms(50, repeating_timer_callback1, NULL, &timer_pwm);
-                printf("\nBotão J pressionado, luz vermelha ligada e som do PWM ligado .");
-
             }
             else {
                 cancel_repeating_timer(&timer_pwm);
                 buzzcontrol_off();
-                printf("\nBotão J pressionado, luz vermelha desligada e som do PWM desligado.");
             }  
         }  
     }
@@ -147,19 +144,22 @@ void gpio_irq_handler(uint gpio, uint32_t events){
 
         if(gpio == botao_a && (current_time - lastA > 5000)){
             B.press1 = !B.press1;
+            B.press2 = false;
+            B.impedir = true;
+            B.press3 = false;
             gpio_put(green_led, B.press1);
-            (B.press1) ? printf("\nBotão A pressionado. Luz verde ligada e matriz ativada"): printf("\nBotao A pressionado. Luz verde desligada e matriz desativada.");
+            gpio_put(blue_led, B.press2);
+            gpio_put(red_led, B.press3);
             lastA = current_time;
         }
 
-        if(gpio == botao_b && (current_time - lastB > 5000)){
+        if(((gpio == botao_b && B.press1) && !B.press3) && (current_time - lastB > 5000)){
             B.press2 = !B.press2;
             gpio_put(blue_led, B.press2);
-            (B.press2) ? printf("\nBotão B pressionado. Luz azul ligada e matriz ativada.") : printf("\nBotão B pressionado. Luz azul desligada e matriz desativada.");
             lastB = current_time;
         }
 
-        if(gpio == botao_j && (current_time - lastJ > 5000)){
+        if((gpio == botao_j && B.press1 && B.press2) && (current_time - lastJ > 5000)){
             B.press3 = !B.press3;
             B.impedir = true;
             gpio_put(red_led, B.press3);

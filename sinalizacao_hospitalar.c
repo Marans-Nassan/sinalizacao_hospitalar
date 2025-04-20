@@ -77,7 +77,7 @@ void led_clear_a(); // Limpar o símbolo utilizado pela matriz ativada no botão
 void led_clear_b(); // Limpar o símbolo utilizado pela matriz ativada no botão b.
 void press_a(); // Apresentar o símbolo utilizado pela matriz ativada no botão a.
 void press_b(); // Apresentar o símbolo utilizado pela matriz ativada no botão b.
-void reading_adc();
+void reading_adc(); // Apresentar a leitura do conversor para permitir análises de funcionamento.
 
 int main(){
 

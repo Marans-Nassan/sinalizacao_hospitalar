@@ -58,12 +58,12 @@ uint16_t media_adc;
 
 void ledinit(); //inicialização do led
 void botinit(); //inicialização dos botões
-void led_lig_des(); // Responsável por ligar e desligar os leds comuns
+void led_lig_des(); // Responsável por inserir as interrupções.
 void gpio_irq_handler(uint gpio, uint32_t events); // Conteúdo das interrupções.
 int pwm_setup(); // Configuraçãod o PWM.
 void buzzcontrol_on(); // Controle de ativação do PWM.
 void buzzcontrol_off(); // Controle de desativação do PWM.
-void som(); // Configuração do som que sai do PWM.
+void som(); // Configuração do som reproduzido pelo PWM.
 bool repeating_timer_callback1(struct repeating_timer *t); // Timer utilizado na configuração de ativação do PWM.
 void adcinit(); // Inicialização do conversor.
 uint16_t media(uint8_t channel); // Responsável pela obtenção da média da leitura do ADC a fim de ter uma maior precisão.

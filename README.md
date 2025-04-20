@@ -25,7 +25,6 @@ Funcionalidades adaptadas para cenários médicos, como chamadas de enfermagem e
 | Buzzer           | GPIO 21      | Alerta sonoro de prioridade.                    |  
 | Matriz de LEDs   | GPIO 7       | Códigos visuais (ex: ⚕️, 🔴, 🔵)               |  
 | Joystick (VRX/VRY)| ADC0/ADC1   | Ferramenta para verificar o funcionamento.      |  
-------------------------------------------------------------------------------------|
 
 ### Operação  
 1. **Modo Rotina (Botão A)**:  

@@ -21,16 +21,16 @@ set(PICO_BOARD pico_w CACHE STRING "Board type")
 
 include(pico_sdk_import.cmake)  
 
-project(revisao C CXX ASM) 
+project(sinalizacao_hospitalar C CXX ASM) 
 
 pico_sdk_init()
 
 add_executable(${PROJECT_NAME}
-    revisao.c
+    sinalizacao_hospitalar.c
     ssd1306.c
 )
 
-pico_set_program_name(${PROJECT_NAME} "revisao")
+pico_set_program_name(${PROJECT_NAME} "sinalizacao_hospitalar")
 pico_set_program_version(${PROJECT_NAME} "0.1")
 
 pico_generate_pio_header(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)

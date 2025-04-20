@@ -14,8 +14,7 @@ Funcionalidades adaptadas para cenários médicos, como chamadas de enfermagem e
 
 ## Componentes e Funcionalidades  
 ### Elementos Principais  
-| Componente       | GPIO/Pino     | Função Hospitalar                              |  
-|------------------|--------------|-------------------------------------------------|  
+| Componente       | GPIO/Pino    | Função Hospitalar                               |   
 | LED Verde        | GPIO 11      | Status normal. (Em atividade)                   |  
 | LED Vermelho     | GPIO 13      | Emergência. (prioridade máxima)                 |  
 | LED Azul         | GPIO 12      | Chamada de enfermagem.                          |  

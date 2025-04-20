@@ -145,21 +145,21 @@ void gpio_irq_handler(uint gpio, uint32_t events){
     uint64_t current_time = to_us_since_boot(get_absolute_time()) /1000;
     static uint64_t lastA = 0, lastB = 0, lastJ = 0;
 
-        if(gpio == botao_a && (current_time - lastA > 300)){
+        if(gpio == botao_a && (current_time - lastA > 5000)){
             B.press1 = !B.press1;
             gpio_put(green_led, B.press1);
             (B.press1) ? printf("\nBotão A pressionado. Luz verde ligada e matriz ativada"): printf("\nBotao A pressionado. Luz verde desligada e matriz desativada.");
             lastA = current_time;
         }
 
-        if(gpio == botao_b && (current_time - lastB > 300)){
+        if(gpio == botao_b && (current_time - lastB > 5000)){
             B.press2 = !B.press2;
             gpio_put(blue_led, B.press2);
             (B.press2) ? printf("\nBotão B pressionado. Luz azul ligada e matriz ativada.") : printf("\nBotão B pressionado. Luz azul desligada e matriz desativada.");
             lastB = current_time;
         }
 
-        if(gpio == botao_j && (current_time - lastJ > 300)){
+        if(gpio == botao_j && (current_time - lastJ > 5000)){
             B.press3 = !B.press3;
             B.impedir = true;
             gpio_put(red_led, B.press3);
@@ -306,7 +306,7 @@ void press_b(){
     const uint8_t digit_leds[] = {17, 13, 12, 11, 7};
     size_t a = sizeof(digit_leds) / sizeof(digit_leds[0]);
     for (size_t i = 0; i < a; ++i) {
-        setled(digit_leds[i], 0, 1, 0);
+        setled(digit_leds[i], 1, 0, 0);
     }
         mdisplay();   
 }

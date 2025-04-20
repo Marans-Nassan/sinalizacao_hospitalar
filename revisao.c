@@ -77,7 +77,7 @@ void led_clear_a(); // Limpar o símbolo utilizado pela matriz ativada no botão
 void led_clear_b(); // Limpar o símbolo utilizado pela matriz ativada no botão b.
 void press_a(); // Apresentar o símbolo utilizado pela matriz ativada no botão a.
 void press_b(); // Apresentar o símbolo utilizado pela matriz ativada no botão b.
-bool repeating_timer_callback2(struct repeating_timer *t); // Responsável por possibilitar a leitura do conversor digital dos eixos.
+void reading_adc();
 
 int main(){
 
@@ -91,12 +91,12 @@ int main(){
     i2cinit();
     oledinit();
     minit(matriz_led);
-    add_repeating_timer_ms (250, repeating_timer_callback2, NULL, &timer_adc);    
 
     while (true) {
         vry_value = 4095 - media(adc_channel_0); //Potênciometro está invertido.
         vrx_value = media(adc_channel_1);
         oleddis();
+        reading_adc();
         (B.press1) ? press_a():led_clear_a();
         (B.press2) ? press_b():led_clear_b();
         if(B.impedir){
@@ -311,9 +311,8 @@ void press_b(){
         mdisplay();   
 }
 
-bool repeating_timer_callback2(struct repeating_timer *t){
+void reading_adc(){
     uint16_t reading1 = media(adc_channel_0);
     uint16_t reading2 = media(adc_channel_1);
     printf("\nLeitura dos eixos Y e X: %d | %d", reading1, reading2);
-    return true;
 }

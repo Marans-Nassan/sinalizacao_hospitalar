@@ -52,10 +52,10 @@ Driver PIO ws2812.pio para matriz de LEDs.
 
 ## Compilação:
 
-Configure o ambiente de desenvolvimento do Raspberry Pi Pico (SDK do Pico e CMake).
-Clone este repositório.
-Compile o código utilizando CMake e o SDK do Pico.
-Carregue o arquivo .uf2 gerado para o Raspberry Pi Pico.
+- Configure o ambiente de desenvolvimento do Raspberry Pi Pico (SDK do Pico e CMake).
+- Clone este repositório.
+- Compile o código utilizando CMake e o SDK do Pico.
+- Carregue o arquivo .uf2 gerado para o Raspberry Pi Pico.
 
 ## Autor
 Hugo Martins Santana (TIC370101267)

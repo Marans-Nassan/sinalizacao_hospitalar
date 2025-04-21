@@ -22,7 +22,7 @@ Funcionalidades adaptadas para cenários médicos, como chamadas de enfermagem e
 | Botão B          | GPIO 6       | Alerta de necessidade médica.                   |  
 | Botão J          | GPIO 22      | Estado Crítico! Alerta Sonoro.                  |  
 | Buzzer           | GPIO 21      | Alerta sonoro de prioridade.                    |  
-| Matriz de LEDs   | GPIO 7       | Códigos visuais (ex: ⚕️, 🔴, 🔵)               |  
+| Matriz de LEDs   | GPIO 7       | Códigos visuais.                                |  
 | Joystick (VRX/VRY)| ADC0/ADC1   | Ferramenta para verificar o funcionamento.      |  
 
 ### Operação  
